@@ -1379,10 +1379,14 @@ template <typename T> struct formattable : std::false_type {};
 
 namespace detail {
 
+#if FMT_GCC_VERSION && FMT_GCC_VERSION < 500
 // A workaround for gcc 4.8 to make void_t work in a SFINAE context.
 template <typename... Ts> struct void_t_impl { using type = void; };
 template <typename... Ts>
 using void_t = typename detail::void_t_impl<Ts...>::type;
+#else
+template <typename...> using void_t = void;
+#endif
 
 template <typename It, typename T, typename Enable = void>
 struct is_output_iterator : std::false_type {};
@@ -1524,6 +1528,11 @@ using wformat_context = buffer_context<wchar_t>;
 // Workaround an alias issue: https://stackoverflow.com/q/62767544/471164.
 #define FMT_BUFFER_CONTEXT(Char) \
   basic_format_context<detail::buffer_appender<Char>, Char>
+
+template <typename T, typename Char = char>
+using is_formattable = bool_constant<!std::is_same<
+    decltype(detail::arg_mapper<buffer_context<Char>>().map(std::declval<T>())),
+    detail::unformattable>::value>;
 
 /**
   \rst
